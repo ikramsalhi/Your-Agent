@@ -1,0 +1,16 @@
+{
+  "name": "your-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A personal AI productivity workspace with a task-aware assistant, planner and notes.",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --watch --env-file-if-exists=.env server/index.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}

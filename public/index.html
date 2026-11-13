@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d0d19" />
+  <meta name="description" content="Your-Agent: a beautiful personal AI productivity assistant, task manager and notes workspace." />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/styles.css" />
+  <title>Your-Agent — Make progress, every day</title>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="/" aria-label="Your-Agent home" data-nav="overview">
+        <span class="brand-mark">✦</span><span class="brand-word">your<span>agent</span><small>PERSONAL WORKSPACE</small></span>
+      </a>
+      <div class="sidebar-section-label">WORKSPACE</div>
+      <nav class="nav-list" aria-label="Main navigation">
+        <button class="nav-item active" data-nav="overview"><span class="nav-icon">▦</span> Overview <span class="nav-key">01</span></button>
+        <button class="nav-item" data-nav="assistant"><span class="nav-icon">✧</span> AI Assistant <span class="nav-key">02</span></button>
+        <button class="nav-item" data-nav="tasks"><span class="nav-icon">☑</span> My Tasks <span class="nav-key">03</span></button>
+        <button class="nav-item" data-nav="notes"><span class="nav-icon">▤</span> Notes <span class="nav-key">04</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-tip"><span class="tip-icon">✳</span><strong>Small steps, big things.</strong><p>Organize your day and let your ideas take shape.</p></div>
+        <div class="profile"><span class="avatar">YA</span><div><strong>My Workspace</strong><small>Personal edition</small></div><span class="profile-dots">•••</span></div>
+      </div>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="breadcrumb">WORKSPACE <span>/</span> <strong id="current-page-title">Overview</strong></div>
+        <div class="topbar-right"><span id="connection-badge" class="connection-badge"><span class="connection-dot"></span> Checking AI</span><span class="top-avatar">YA</span></div>
+      </header>
+
+      <div class="content">
+        <section id="view-overview" class="view">
+          <div class="hello-row"><div><div class="eyebrow">✦ YOUR PERSONAL COMMAND CENTER</div><h1 id="greeting">Good to see you.</h1><p class="intro">A clearer mind starts with an organized space. What will you accomplish today?</p></div><div class="date-pill" id="today-pill">Today</div></div>
+
+          <div class="hero-card"><div class="hero-copy"><div class="hero-kicker"><span class="sparkle">✦</span> MEET YOUR PERSONAL COPILOT</div><h2>Less busywork.<br><em>More brilliant work.</em></h2><p>From a quick idea to a clear action plan — your AI assistant is here to help you move forward.</p><button class="primary-button hero-cta" data-nav="assistant">Chat with your agent <span>↗</span></button></div><div class="hero-art" aria-hidden="true"><span class="orbit orbit-one"></span><span class="orbit orbit-two"></span><span class="hero-spark one">✦</span><span class="hero-spark two">✧</span><div class="orb">✦</div><div class="floating-badge">✳ your next big idea</div></div></div>
+
+          <div class="section-row"><h3>At a glance</h3><span class="section-hint">Your progress, in one place</span></div>
+          <div class="stats-grid">
+            <div class="stat-card"><div class="stat-top"><span class="stat-icon purple">▤</span><span class="stat-trend">ALL TASKS</span></div><strong id="stat-all">0</strong><small>Tasks in your workspace</small></div>
+            <div class="stat-card"><div class="stat-top"><span class="stat-icon green">✓</span><span class="stat-trend">COMPLETED</span></div><strong id="stat-done">0</strong><small>One step closer</small></div>
+            <div class="stat-card"><div class="stat-top"><span class="stat-icon orange">↗</span><span class="stat-trend">IN PROGRESS</span></div><strong id="stat-open">0</strong><small>Things to focus on</small></div>
+            <div class="stat-card"><div class="stat-top"><span class="stat-icon pink">⚑</span><span class="stat-trend">HIGH PRIORITY</span></div><strong id="stat-high">0</strong><small>Needs your attention</small></div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="panel"><div class="panel-head"><div><h3>Your focus list</h3><p>Keep the important things in sight</p></div><button class="text-action" data-nav="tasks">View all ↗</button></div><div id="focus-list" class="focus-list"></div><button class="outline-button full-width" data-nav="tasks">+ Add a new task</button></div>
+            <div class="panel quick-panel"><div class="panel-head"><div><h3>Quick start</h3><p>Let your assistant do the thinking</p></div><span class="panel-spark">✧</span></div><div class="quick-list"><button class="quick-card" data-prompt="Help me plan my day based on my current tasks"><span class="quick-symbol violet">◷</span><span><strong>Plan my day</strong><small>Turn your to-dos into a clear schedule</small></span><span class="quick-arrow">↗</span></button><button class="quick-card" data-prompt="Help me break a big project into simple actionable steps"><span class="quick-symbol teal">⧉</span><span><strong>Break down a project</strong><small>Make a big goal feel manageable</small></span><span class="quick-arrow">↗</span></button><button class="quick-card" data-prompt="Help me prioritize my open tasks and explain why"><span class="quick-symbol peach">✳</span><span><strong>Find my priorities</strong><small>Know what to work on next</small></span><span class="quick-arrow">↗</span></button></div></div>
+          </div>
+          <footer>Made for curious minds and ambitious days. <span>✦</span> Your-Agent</footer>
+        </section>
+
+        <section id="view-assistant" class="view" hidden>
+          <div class="page-heading"><div><div class="eyebrow">✦ YOUR THINKING PARTNER</div><h1>AI Assistant <span class="heading-spark">✧</span></h1><p class="intro">A space to brainstorm, organize, and get things moving.</p></div><button id="clear-chat" class="outline-button">↺ New conversation</button></div>
+          <div class="chat-panel"><div class="chat-top"><span class="agent-avatar">✦</span><span><strong>Your-Agent</strong><small>Here to help you make progress</small></span><span class="chat-mode">PERSONAL ASSISTANT</span></div><div id="chat-messages" class="chat-messages" aria-live="polite"></div><div id="chat-suggestions" class="chat-suggestions"><span>TRY ASKING</span><button data-prompt="Create a focused study plan for my week">Plan my study week ↗</button><button data-prompt="Help me organize all my open tasks">Organize my tasks ↗</button><button data-prompt="Suggest 3 productive things I can do today">What should I do today? ↗</button></div><form id="chat-form" class="chat-compose"><textarea id="chat-input" rows="1" maxlength="3000" placeholder="Ask anything, or tell your agent what to plan..." aria-label="Message your AI assistant" required></textarea><button id="send-chat" type="submit" class="send-button" aria-label="Send message">➤</button></form><div class="chat-disclaimer">✳ Task changes suggested by AI require your approval. AI can make mistakes.</div></div>
+        </section>
+
+        <section id="view-tasks" class="view" hidden>
+          <div class="page-heading"><div><div class="eyebrow">✦ MAKE IT HAPPEN</div><h1>My Tasks</h1><p class="intro">All your plans, beautifully organized in one place.</p></div><div class="task-count-pill" id="task-count-pill">0 active</div></div>
+          <form id="task-form" class="panel task-create"><div class="create-heading"><span class="stat-icon purple">＋</span><div><h3>Add something to your list</h3><p>Little steps lead to great progress.</p></div></div><div class="task-form-grid"><label class="field task-title-field"><span>WHAT NEEDS TO GET DONE?</span><input id="task-title" maxlength="160" placeholder="e.g. Finish project proposal" required /></label><label class="field"><span>PRIORITY</span><select id="task-priority"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select></label><label class="field"><span>DUE DATE (OPTIONAL)</span><input id="task-date" type="date" /></label><button type="submit" class="primary-button add-task-button">＋ Add Task</button></div></form>
+          <div class="section-row task-section-row"><h3>Your to-do list</h3><div class="filter-buttons" role="group" aria-label="Filter tasks"><button class="filter active" data-filter="all">All</button><button class="filter" data-filter="open">Active</button><button class="filter" data-filter="done">Completed</button></div></div><div id="task-list" class="task-list"></div>
+        </section>
+
+        <section id="view-notes" class="view" hidden>
+          <div class="page-heading"><div><div class="eyebrow">✦ CAPTURE THE SPARK</div><h1>My Notes</h1><p class="intro">A home for your thoughts, ideas, and everything in between.</p></div><div class="task-count-pill" id="note-count-pill">0 notes</div></div>
+          <form id="note-form" class="panel note-editor"><div class="create-heading"><span class="stat-icon purple">✎</span><div><h3 id="note-form-title">Write something down</h3><p>Good ideas deserve a place to land.</p></div></div><label class="field"><span>TITLE</span><input id="note-title" maxlength="100" required placeholder="Give your thought a name" /></label><label class="field"><span>YOUR NOTE</span><textarea id="note-content" rows="5" maxlength="5000" required placeholder="Start writing... "></textarea></label><div class="note-actions"><button id="cancel-edit-note" type="button" class="outline-button" hidden>Cancel edit</button><button class="primary-button" type="submit" id="save-note-button">Save note ↗</button></div></form>
+          <div class="section-row note-section-row"><h3>Saved ideas</h3><span class="section-hint">Stored privately in this browser</span></div><div id="notes-grid" class="notes-grid"></div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
