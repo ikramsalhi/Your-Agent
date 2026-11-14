@@ -115,7 +115,7 @@ export function parseBackup(data) {
     const content = clean(message.content, 6000);
     if (!content) return [];
     return [{
-      id: safeId(message.id) || 'imported-' + messages.length,
+      id: safeId(message.id) || 'imported-' + String(workspace.messages.indexOf(message)),
       role: message.role, content, time: clean(message.time, 40),
       // A restored backup must never re-enable old, unreviewed AI actions.
       actions: [],
