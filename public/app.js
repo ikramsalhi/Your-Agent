@@ -1,9 +1,12 @@
+import { buildBackup, parseBackup, filterTasks, dueSummary } from './workspace-utils.js';
 const STORAGE_KEY = 'your-agent:workspace:v1';
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
 const id = () => globalThis.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const validViews = ['overview', 'assistant', 'tasks', 'notes'];
 let activeFilter = 'all';
+let taskSearch = '';
+let editingTaskId = null;
 let editingNoteId = null;
 let chatBusy = false;
 let toastTimeout;
@@ -67,6 +70,10 @@ function renderOverview() {
   $('#stat-done').textContent = done.length;
   $('#stat-open').textContent = open.length;
   $('#stat-high').textContent = high.length;
+  const due = dueSummary(state.tasks);
+  $('#due-insights').textContent = `${due.today} due today · ${due.overdue} overdue`;
+  $('#completion-progress').style.width = `${state.tasks.length ? Math.round(done.length / state.tasks.length * 100) : 0}%`;
+  $('#completion-label').textContent = `${state.tasks.length ? Math.round(done.length / state.tasks.length * 100) : 0}% completed`;
   const hour = new Date().getHours();
   $('#greeting').textContent = hour < 12 ? 'Good morning.' : hour < 17 ? 'Good afternoon.' : 'Good evening.';
   $('#today-pill').textContent = new Date().toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
@@ -81,22 +88,26 @@ function renderOverview() {
 function renderTasks() {
   const openCount = state.tasks.filter((task) => task.status !== 'done').length;
   $('#task-count-pill').textContent = `${openCount} active`;
-  const visible = sortedTasks(state.tasks.filter((task) => activeFilter === 'all' || (activeFilter === 'done' ? task.status === 'done' : task.status !== 'done')));
+  const visible = sortedTasks(filterTasks(state.tasks, activeFilter, taskSearch));
+  const due = dueSummary(state.tasks);
+  $('#due-filter-count').textContent = due.today;
+  $('#overdue-filter-count').textContent = due.overdue;
   $$('.filter').forEach((button) => button.classList.toggle('active', button.dataset.filter === activeFilter));
   $('#task-list').innerHTML = visible.length ? visible.map((task) => `
     <div class="task-row">
       <input type="checkbox" data-toggle-task="${escapeHtml(task.id)}" ${task.status === 'done' ? 'checked' : ''} aria-label="Toggle ${escapeHtml(task.title)}" />
       <div class="task-main ${task.status === 'done' ? 'done' : ''}"><strong>${escapeHtml(task.title)}</strong><small>${task.dueDate ? `Due ${escapeHtml(formatDate(task.dueDate))}` : 'No due date'} · ${task.status === 'done' ? 'Completed' : 'Active'}</small></div>
       <span class="priority-tag ${escapeHtml(task.priority)}">${escapeHtml(priorityLabel(task.priority))}</span>
+      <button type="button" class="icon-button" data-edit-task="${escapeHtml(task.id)}" aria-label="Edit ${escapeHtml(task.title)}" title="Edit task">✎</button>
       <button type="button" class="delete-button" data-delete-task="${escapeHtml(task.id)}" aria-label="Delete ${escapeHtml(task.title)}">×</button>
     </div>`).join('') : `<div class="empty-list empty-state"><span class="empty-symbol">✓</span><strong>Nothing here yet.</strong><p>${activeFilter === 'all' ? 'Your first task is just a few clicks away.' : 'No tasks match this filter.'}</p></div>`;
 }
 function renderNotes() {
   $('#note-count-pill').textContent = `${state.notes.length} note${state.notes.length === 1 ? '' : 's'}`;
-  $('#notes-grid').innerHTML = state.notes.length ? [...state.notes].sort((a, b) => b.updatedAt - a.updatedAt).map((note) => `
-    <article class="note-card"><div class="note-card-top"><span>✎</span><span style="font-size:10px;color:#837e9a">IDEA / NOTE</span></div>
+  $('#notes-grid').innerHTML = state.notes.length ? [...state.notes].sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.updatedAt - a.updatedAt).map((note) => `
+    <article class="note-card"><div class="note-card-top"><span>✎</span><span style="font-size:10px;color:#837e9a">${note.pinned ? "📌 PINNED" : "IDEA / NOTE"}</span></div>
     <h3>${escapeHtml(note.title)}</h3><p>${escapeHtml(note.content)}</p>
-    <div class="note-card-bottom"><span>${escapeHtml(new Date(note.updatedAt || Date.now()).toLocaleDateString())}</span><div class="note-card-buttons"><button type="button" data-edit-note="${escapeHtml(note.id)}">Edit</button><button type="button" data-delete-note="${escapeHtml(note.id)}">Delete</button></div></div></article>`).join('') : `<div class="empty-list empty-state"><span class="empty-symbol">✎</span><strong>Your ideas start here.</strong><p>Write your first note to collect thoughts and inspiration.</p></div>`;
+    <div class="note-card-bottom"><span>${escapeHtml(new Date(note.updatedAt || Date.now()).toLocaleDateString())}</span><div class="note-card-buttons"><button type="button" data-pin-note="${escapeHtml(note.id)}">${note.pinned ? "Unpin" : "Pin"}</button><button type="button" data-edit-note="${escapeHtml(note.id)}">Edit</button><button type="button" data-delete-note="${escapeHtml(note.id)}">Delete</button></div></div></article>`).join('') : `<div class="empty-list empty-state"><span class="empty-symbol">✎</span><strong>Your ideas start here.</strong><p>Write your first note to collect thoughts and inspiration.</p></div>`;
 }
 function actionDescription(action) {
   const verbs = { create: 'Create task', complete: 'Complete task', reopen: 'Reopen task', delete: 'Delete task' };
@@ -216,13 +227,32 @@ document.addEventListener('click', (event) => {
   const quickPrompt = event.target.closest('[data-prompt]');
   if (quickPrompt) { setView('assistant'); sendChat(quickPrompt.dataset.prompt); return; }
   const deleteTaskButton = event.target.closest('[data-delete-task]');
-  if (deleteTaskButton) { removeTask(deleteTaskButton.dataset.deleteTask); toast('Task deleted'); return; }
+  if (deleteTaskButton) { if (confirm('Delete this task?')) { removeTask(deleteTaskButton.dataset.deleteTask); toast('Task deleted'); } return; }
+  const editTask = event.target.closest('[data-edit-task]');
+  if (editTask) {
+    const task = state.tasks.find(item => item.id === editTask.dataset.editTask);
+    if (!task) return;
+    editingTaskId = task.id;
+    $('#task-title').value = task.title;
+    $('#task-priority').value = task.priority;
+    $('#task-date').value = task.dueDate || '';
+    $('#task-form-heading').textContent = 'Edit your task';
+    $('#task-submit').textContent = 'Save changes';
+    $('#cancel-task-edit').hidden = false;
+    $('#task-title').focus(); return;
+  }
   const filter = event.target.closest('[data-filter]');
   if (filter) { activeFilter = filter.dataset.filter; renderTasks(); return; }
   const apply = event.target.closest('[data-apply-action]');
   if (apply) { applyAction(apply.dataset.applyAction); return; }
   const dismiss = event.target.closest('[data-dismiss-action]');
   if (dismiss) { dismissAction(dismiss.dataset.dismissAction); return; }
+  const pinNote = event.target.closest('[data-pin-note]');
+  if (pinNote) {
+    const note = state.notes.find(item => item.id === pinNote.dataset.pinNote);
+    if (note) { note.pinned = !note.pinned; note.updatedAt = Date.now(); save(); renderNotes(); toast(note.pinned ? 'Note pinned 📌' : 'Note unpinned'); }
+    return;
+  }
   const editNote = event.target.closest('[data-edit-note]');
   if (editNote) {
     const note = state.notes.find((item) => item.id === editNote.dataset.editNote);
@@ -237,6 +267,7 @@ document.addEventListener('click', (event) => {
   }
   const deleteNote = event.target.closest('[data-delete-note]');
   if (deleteNote) {
+    if (!confirm('Delete this note?')) return;
     state.notes = state.notes.filter((item) => item.id !== deleteNote.dataset.deleteNote);
     if (editingNoteId === deleteNote.dataset.deleteNote) clearNoteEditor();
     save(); renderNotes(); toast('Note deleted');
@@ -248,9 +279,50 @@ document.addEventListener('change', (event) => {
 
 $('#task-form').addEventListener('submit', (event) => {
   event.preventDefault();
-  if (createTask($('#task-title').value, $('#task-priority').value, $('#task-date').value)) {
+  if (editingTaskId) {
+    const task = state.tasks.find(item => item.id === editingTaskId);
+    if (!task) return;
+    const title = $('#task-title').value.trim().slice(0, 160);
+    if (!title) return;
+    Object.assign(task, { title, priority: $('#task-priority').value, dueDate: $('#task-date').value, updatedAt: Date.now() });
+    save(); renderAll(); resetTaskEditor(); toast('Task updated ✓');
+  } else if (createTask($('#task-title').value, $('#task-priority').value, $('#task-date').value)) {
     $('#task-form').reset(); toast('Task added! You’ve got this ✨');
   }
+});
+function resetTaskEditor() {
+  editingTaskId = null;
+  $('#task-form').reset();
+  $('#task-form-heading').textContent = 'Add something to your list';
+  $('#task-submit').textContent = '＋ Add Task';
+  $('#cancel-task-edit').hidden = true;
+}
+$('#cancel-task-edit').addEventListener('click', resetTaskEditor);
+$('#task-search').addEventListener('input', event => { taskSearch = event.target.value; renderTasks(); });
+$('#export-workspace').addEventListener('click', () => {
+  const data = JSON.stringify(buildBackup(state), null, 2);
+  const link = document.createElement('a');
+  const url = URL.createObjectURL(new Blob([data], { type: 'application/json' }));
+  link.href = url;
+  link.download = `your-agent-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  document.body.append(link); link.click(); link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('Workspace backup downloaded ✓');
+});
+$('#import-workspace').addEventListener('change', async event => {
+  const file = event.target.files?.[0];
+  event.target.value = '';
+  if (!file) return;
+  if (file.size > 2_000_000) return toast('Backup is too large (max 2 MB).');
+  try {
+    const incoming = parseBackup(JSON.parse(await file.text()));
+    if (!confirm(`Replace your current workspace with ${incoming.tasks.length} tasks and ${incoming.notes.length} notes? Export a backup first if needed.`)) return;
+    state = incoming;
+    activeFilter = 'all'; taskSearch = ''; $('#task-search').value = '';
+    resetTaskEditor(); clearNoteEditor();
+    save(); renderAll(); setView(state.view);
+    toast('Workspace restored successfully ✓');
+  } catch (error) { toast(error.message || 'Could not import this file.'); }
 });
 function clearNoteEditor() {
   editingNoteId = null;
@@ -268,7 +340,7 @@ $('#note-form').addEventListener('submit', (event) => {
   if (editingNoteId) {
     const note = state.notes.find((item) => item.id === editingNoteId);
     if (note) Object.assign(note, { title, content, updatedAt: Date.now() });
-  } else state.notes.push({ id: id(), title, content, updatedAt: Date.now() });
+  } else state.notes.push({ id: id(), title, content, pinned: false, updatedAt: Date.now() });
   save(); renderNotes(); clearNoteEditor(); toast('Note saved ✨');
 });
 $('#chat-form').addEventListener('submit', (event) => { event.preventDefault(); sendChat($('#chat-input').value); });
